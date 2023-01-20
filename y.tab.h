@@ -149,7 +149,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 303 "parser.y"
+#line 317 "parser.y"
 
 	Symbolinfo* symbolinfo; 
 	vector<Symbolinfo*>* symbolinfo_list;

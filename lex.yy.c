@@ -625,7 +625,7 @@ extern SymbolTable *table;
 void yyerror(char *);
 extern ofstream logfile;
 int line_count=1;
-int errorcount=0;
+
 extern FILE *logout;
 FILE *tokenout;
 string  line="";
@@ -1823,18 +1823,17 @@ case YY_STATE_EOF(SINGLECOMMENT):
 #line 721 "lexical.l"
 {
 	
-	fprintf(logout,"Total lines: %d\n",line_count);
-	fprintf(logout,"Total errors: %d\n",errorcount);
+	
 		 
 	return 0;
 }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 732 "lexical.l"
+#line 731 "lexical.l"
 ECHO;
 	YY_BREAK
-#line 1838 "lex.yy.c"
+#line 1837 "lex.yy.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2837,6 +2836,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 732 "lexical.l"
+#line 731 "lexical.l"
 
 

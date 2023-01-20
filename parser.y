@@ -12,11 +12,12 @@ ofstream logfile;
 ofstream errorfile;
 ofstream parsefile;
 extern int line_count;
-extern int error_count;
+int error_count;
 FILE *logout;
 extern int yylineno;
 SymbolTable *table;
-
+string function_return="";
+int returnLine=-1;
 //parameters for including them in the scope
 vector<Symbolinfo*>*function_parameter;
 vector<Symbolinfo*>*variable_declaration;
@@ -52,6 +53,7 @@ void variable_declare(string type,vector<Symbolinfo*>* variablelist)
 		if (type=="VOID")
       {  cout<<"bleh1"<<endl;
 		errorfile<<"Line# "<<line_count<<": Variable or field '"<<symbol->getName()<<"' declared void"<<endl;
+		error_count++;
 		return;
 	  }
 	  else {
@@ -72,15 +74,17 @@ void variable_declare(string type,vector<Symbolinfo*>* variablelist)
 			if(info->getDataType()!=symbol->getDataType())
 			   {
 				errorfile<<"Line# "<<line_count<<": Conflicting types for'"<<symbol->getName()<<"'"<<endl;
-
+                error_count++;
 			   }
 			else if(info->getisArray()!=symbol->getisArray())
 			{
 				errorfile<<"Line# "<<line_count<<": Conflicting types for'"<<symbol->getName()<<"'"<<endl;
+				error_count++;
 			}
 			else
 			{
 				errorfile<<"Line# "<<line_count<<": redeclaration of '"<<symbol->getName()<<"'"<<endl;
+				error_count++;
 			}
 		}
 	  }
@@ -107,12 +111,14 @@ void define_function(string returnType,Symbolinfo* function_name,vector<Symbolin
 		  if (temp->getDataType()!=returnType)
 		     {
 				errorfile<<"Line# "<<line_count<<": Conflicting types for '"<<function_name->getName()<<"'"<<endl;
+				error_count++;
 				return;
 				
 			 }
 		  if(temp->getisFunctionDefination()==true)
 		  {
 			errorfile<<"Line# "<<line_count<<": Redefinition of '"<<function_name->getName()<<"'"<<endl;
+			error_count++;
 			return;
 		  }
 		  if(temp->getisFunctionDeclaration()==true)
@@ -121,6 +127,7 @@ void define_function(string returnType,Symbolinfo* function_name,vector<Symbolin
 			 if((*list).size()!=(*param).size())
 			 {
 				errorfile<<"Line# "<<line_count<<": Conflicting types for '"<<function_name->getName()<<"'"<<endl;
+				error_count++;
 				return;
 				
 			 }
@@ -133,14 +140,15 @@ void define_function(string returnType,Symbolinfo* function_name,vector<Symbolin
 			 {
 				if((*list)[i]->getDataType()!=(*param)[i]->getDataType())
 				{
-					errorfile<<"Line# "<<line_count<<": Type mismatch for argument "<<i+1<<" of '"<<function_name->getName()<<"'"<<endl;
-					
+					errorfile<<"Line# "<<(*param)[i]->GetStartLine()<<": Type mismatch for argument "<<i+1<<" of '"<<function_name->getName()<<"'"<<endl;
+					error_count++;
 				}
 			 }
 		  }
 		  else
 		  {
 			errorfile<<"Line# "<<line_count<<": '"<<function_name->getName()<<"' redeclared as different kind of symbol"<<endl;
+			error_count++;
 			return;
 		  }
 	   }
@@ -178,12 +186,14 @@ void declare_function(string returnType,Symbolinfo* function_name,vector<Symboli
 		  if (temp->getDataType()!=returnType)
 		     {
 				errorfile<<"Line# "<<line_count<<": Conflicting types for '"<<function_name->getName()<<"'"<<endl;
+				error_count++;
 				return;
 				
 			 }
 		  if(temp->getisFunctionDeclaration()==true)
 		  {
 			errorfile<<"Line# "<<line_count<<": Redeclaration of '"<<function_name->getName()<<"'"<<endl;
+			error_count++;
 			return;
 		  }
 		  if(temp->getisFunctionDefination()==true)
@@ -192,6 +202,7 @@ void declare_function(string returnType,Symbolinfo* function_name,vector<Symboli
 			 if((*list).size()!=(*param).size())
 			 {
 				errorfile<<"Line# "<<line_count<<": Conflicting types for '"<<function_name->getName()<<"'"<<endl;
+				error_count++;
 				return;
 				
 			 }
@@ -200,14 +211,15 @@ void declare_function(string returnType,Symbolinfo* function_name,vector<Symboli
 			 {
 				if((*list)[i]->getDataType()!=(*param)[i]->getDataType())
 				{
-					errorfile<<"Line# "<<line_count<<": Type mismatch for argument "<<i+1<<" of '"<<function_name->getName()<<"'"<<endl;
-					
+					errorfile<<"Line# "<<(*param)[i]->GetStartLine()<<": Type mismatch for argument "<<i+1<<" of '"<<function_name->getName()<<"'"<<endl;
+					error_count++;
 				}
 			 }
 		  }
 		  else
 		  {
 			errorfile<<"Line# "<<line_count<<": '"<<function_name->getName()<<"' redeclared as different kind of symbol"<<endl;
+			error_count++;
 			return;
 		  }
 	   }
@@ -230,13 +242,14 @@ void add_parameter_toScopeTable(vector<Symbolinfo*>*param)
 		 }
 		 else
 		 {
-			errorfile<<"Line# "<<line_count<<": Redefinition of parameter '"<<symbol->getName()<<"'"<<endl;
+			errorfile<<"Line# "<<symbol->GetStartLine()<<": Redefinition of parameter '"<<symbol->getName()<<"'"<<endl;
+			error_count++;
 			return;
 		 }
 		}
 	   }
     }
-	param=NULL;
+	
 }
 void clear_list(vector<Symbolinfo*>*symbols)
 {
@@ -255,7 +268,7 @@ Symbolinfo* CallFunction(Symbolinfo* function_name,vector<Symbolinfo*>*symbols)
 	 if(temp==NULL)
 	 {  
 		errorfile<<"Line# "<<line_count<<": Undeclared function '"<<function_name->getName()<<"'"<<endl;
-		
+		error_count++;
 
 	 }
 	 else
@@ -264,6 +277,7 @@ Symbolinfo* CallFunction(Symbolinfo* function_name,vector<Symbolinfo*>*symbols)
 		{
 			temp=NULL;
 			errorfile<<"Line# "<<line_count<<": Undeclared function '"<<function_name->getName()<<"'"<<endl;
+			error_count++;
 		}
 		else
 		{
@@ -272,12 +286,12 @@ Symbolinfo* CallFunction(Symbolinfo* function_name,vector<Symbolinfo*>*symbols)
 			if((*argu).size()<(*symbols).size())
 			{
 				errorfile<<"Line# "<<line_count<<": Too many arguments to function '"<<function_name->getName()<<"'"<<endl;
-				
+				error_count++;
 			}
 			else if((*argu).size()>(*symbols).size())
 			{
 				errorfile<<"Line# "<<line_count<<": Too few arguments to function '"<<function_name->getName()<<"'"<<endl;
-				
+				error_count++;
 			}
 			else
 			{
@@ -287,7 +301,7 @@ Symbolinfo* CallFunction(Symbolinfo* function_name,vector<Symbolinfo*>*symbols)
 					{
 						cout<<(*argu)[i]->getDataType()<<"okay"<<(*symbols)[i]->getDataType()<<"okay"<<endl;
                       errorfile<<"Line# "<<line_count<<": Type mismatch for argument "<<i+1<<" of '"<<function_name->getName()<<"'"<<endl;
-					  
+					  error_count++;
 					}
 				}
 			}
@@ -324,14 +338,16 @@ Symbolinfo* CallFunction(Symbolinfo* function_name,vector<Symbolinfo*>*symbols)
 %%
 
 start : program
-	{     $$=new Symbolinfo("program","start");
+	{     logfile<<"start : program"<<endl;
+		  $$=new Symbolinfo("program","start");
           $$->add_child($1);
 		  $$->SetStartLine($1->GetStartLine());
 		  $$->SetEndLine($1->GetEndLine());
 		  DFS($$,"");
-
+          logfile<<"Total lines: "<<line_count<<endl;
+	      logfile<<"Total errors: "<<error_count<<endl;
 		//write your code in this block in all the similar blocks below
-          logfile<<"start : program"<<endl;
+          
 	}
 	;
 
@@ -424,6 +440,23 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN { Symbolinfo *i
 					 $$->SetStartLine($1->GetStartLine());
 			         $$->SetEndLine($7->GetEndLine());
                     logfile<<"func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement"<<endl;
+					if(($1->getDataType()=="INT" || $1->getDataType()=="FLOAT")&& function_return=="")
+					{
+                       errorfile<<"Line# "<<returnLine<<": Not returning any "<<$1->getDataType()<<" type value"<<endl;
+					   error_count++;
+					}
+					else if($1->getDataType()=="VOID" &&(function_return=="INT" ||function_return=="FLOAT"))
+					{
+						errorfile<<"Line# "<<returnLine<<": Returing "<<function_return<<" in VOID return type function"<<endl;
+						error_count++;
+					}
+					else if($1->getDataType()!=function_return && function_return!="")
+					{
+                        errorfile<<"Line# "<<returnLine<<": Return type mismatched"<<endl;
+						error_count++;
+					}
+					returnLine=-1;
+					function_return="";
                 }
 		        | type_specifier ID LPAREN RPAREN {Symbolinfo *info=new Symbolinfo($2->getName(),$2->getType());define_function($1->getDataType(),info,new vector<Symbolinfo*>());}compound_statement {
 					//delete $1;
@@ -436,12 +469,31 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN { Symbolinfo *i
 					 $$->SetStartLine($1->GetStartLine());
 			         $$->SetEndLine($6->GetEndLine());
                     logfile<<"func_definition : type_specifier ID LPAREN RPAREN compound_statement"<<endl;
+					if(($1->getDataType()=="INT" || $1->getDataType()=="FLOAT")&& function_return=="")
+					{
+                       errorfile<<"Line# "<<returnLine<<": Not returning any "<<$1->getDataType()<<" type value"<<endl;
+					   error_count++;
+					}
+					else if($1->getDataType()=="VOID" &&(function_return=="INT" ||function_return=="FLOAT"))
+					{
+						errorfile<<"Line# "<<returnLine<<": Returing "<<function_return<<" in VOID return type function"<<endl;
+						error_count++;
+					}
+					else if($1->getDataType()!=function_return && function_return!="")
+					{
+                        errorfile<<"Line# "<<returnLine<<": Return type mismatched"<<endl;
+						error_count++;
+					}
+					returnLine=-1;
+					function_return="";
 		}
  		;				
 
 
 parameter_list : parameter_list COMMA type_specifier ID {
 	              Symbolinfo *info=new Symbolinfo($4->getName(),$4->getType(),$3->getDataType());
+				  info->SetStartLine($3->GetStartLine());
+				  info->SetEndLine($3->GetEndLine());
 				  function_parameter->push_back(info);
                   logfile<<"parameter_list : parameter_list COMMA type_specifier ID"<<endl;
 				  $$=new Symbolinfo("parameter_list COMMA type_specifier ID","parameter_list");
@@ -454,6 +506,8 @@ parameter_list : parameter_list COMMA type_specifier ID {
             }
 		| parameter_list COMMA type_specifier {
 			      Symbolinfo *info=new Symbolinfo("","",$3->getDataType());
+				   info->SetStartLine($3->GetStartLine());
+				  info->SetEndLine($3->GetEndLine());
 			      function_parameter->push_back(info);
                   logfile<<"parameter_list : parameter_list COMMA type_specifier"<<endl;
 				   $$=new Symbolinfo("parameter_list COMMA type_specifier","parameter_list");
@@ -467,6 +521,8 @@ parameter_list : parameter_list COMMA type_specifier ID {
 			      
 				  function_parameter=new vector<Symbolinfo*>();
 			      Symbolinfo *info=new Symbolinfo($2->getName(),$2->getType(),$1->getDataType());
+				   info->SetStartLine($1->GetStartLine());
+				  info->SetEndLine($1->GetEndLine());
 			      function_parameter->push_back(info);
                   logfile<<"parameter_list : type_specifier ID"<<endl;
 				  $$=new Symbolinfo("type_specifier ID","parameter_list");
@@ -479,6 +535,8 @@ parameter_list : parameter_list COMMA type_specifier ID {
 			 
 			  function_parameter=new vector<Symbolinfo*>();
 			  Symbolinfo *info=new Symbolinfo("","",$1->getDataType());
+			  info->SetStartLine($1->GetStartLine());
+				  info->SetEndLine($1->GetEndLine());
 			  function_parameter->push_back(info);
               logfile<<"parameter_list : type_specifier"<<endl;
 			  $$=new Symbolinfo("type_specifier","parameter_list");
@@ -490,7 +548,7 @@ parameter_list : parameter_list COMMA type_specifier ID {
 
  		
 compound_statement : LCURL{ table->Enter_Scope();add_parameter_toScopeTable(function_parameter); clear_list(function_parameter);} statements RCURL {
-                        $$=new Symbolinfo("LCURL statements RCURL","compound_statement");
+                        $$=new Symbolinfo("LCURL statements RCURL","compound_statement",$3->getDataType());
 					    $$->add_child($1);
 						$$->add_child($3);
 						$$->add_child($4);
@@ -499,6 +557,7 @@ compound_statement : LCURL{ table->Enter_Scope();add_parameter_toScopeTable(func
 					   logfile<<"compound_statement : LCURL statements RCURL"<<endl;
 					   table->printAll(logfile);
 					   table->Exit_Scope();
+					   
                   }
  		    | LCURL{ table->Enter_Scope();add_parameter_toScopeTable(function_parameter);clear_list(function_parameter);} RCURL {
 				        $$=new Symbolinfo("LCURL RCURL","compound_statement");
@@ -615,7 +674,7 @@ declaration_list : declaration_list COMMA ID {
  		  ;
  		  
 statements : statement {
-	               $$=new Symbolinfo("statement","statements");
+	               $$=new Symbolinfo("statement","statements",$1->getDataType());
 			       $$->add_child($1);
 			       $$->SetStartLine($1->GetStartLine());
 			       $$->SetEndLine($1->GetEndLine());
@@ -713,6 +772,9 @@ statement : var_declaration {
 	  }
 	  | RETURN expression SEMICOLON {
 		      $$=new Symbolinfo("RETURN expression SEMICOLON","statement");
+			  $$->setDataType($2->getDataType());
+			  function_return=$2->getDataType();
+			  returnLine=line_count;
 			  $$->add_child($1);
 			  $$->add_child($2);
 			  $$->add_child($3);
@@ -747,6 +809,7 @@ variable : ID {
 			  {
                 errorfile<<"Line# "<<line_count<<": Undeclared variable '"<<$1->getName()<<"'"<<endl;
 				 $$=new Symbolinfo("ID","variable","");
+				 error_count++;
 			  }else 
 			    $$=new Symbolinfo("ID","variable",info->getDataType());
 			  $$->add_child($1);
@@ -760,6 +823,7 @@ variable : ID {
 			  if(info==NULL)
 			  {
                 errorfile<<"Line# "<<line_count<<": Undeclared variable '"<<$1->getName()<<"'"<<endl;
+				error_count++;
                 $$=new Symbolinfo("ID LSQUARE expression RSQUARE","variable","");
 			  }
 			  else
@@ -768,10 +832,12 @@ variable : ID {
 				if(!info->getisArray())
 				{
 					errorfile<<"Line# "<<line_count<<": '"<<$1->getName()<<"' is not an array"<<endl;
+					error_count++;
 				}
 				 if($3->getDataType()!="INT")
 			   {
 				errorfile<<"Line# "<<line_count<<": Array subscript is not an integer"<<endl;
+				error_count++;
 			   }
 			  }
 			    
@@ -800,6 +866,10 @@ expression : logic_expression {
              logfile<<"expression : logic_expression"<<endl;
         }
 	   | variable ASSIGNOP logic_expression {
+		        if($1->getDataType()=="FLOAT"||$3->getDataType()=="FLOAT")
+							{
+								 $$=new Symbolinfo("variable ASSIGNOP logic_expression","expression","FLOAT");
+							}else
 		       $$=new Symbolinfo("variable ASSIGNOP logic_expression","expression",$1->getDataType());
 					 $$->add_child($1);
 			  $$->add_child($2);
@@ -813,10 +883,12 @@ expression : logic_expression {
 						 }
 		      if(($1->getDataType()=="INT" && $3->getDataType()=="FLOAT")){
 		      errorfile<<"Line# "<<line_count<<": Warning: possible loss of data in assignment of "<<$3->getDataType()<<" to "<<$1->getDataType()<<endl;
+			  error_count++;
 			  }
 		    if($3->getDataType()=="VOID")
 			  {
 				errorfile<<"Line# "<<line_count<<": Void cannot be used in expression "<<endl;
+				error_count++;
 			  }
 			  
               logfile<<"expression : variable ASSIGNOP logic_expression"<<endl;
@@ -838,6 +910,11 @@ logic_expression : rel_expression {
                   logfile<<"logic_expression : rel_expression"<<endl;
         }
 		 | rel_expression LOGICOP rel_expression {
+			        if($1->getDataType()=="FLOAT"||$3->getDataType()=="FLOAT")
+							{
+								 $$=new Symbolinfo("rel_expression LOGICOP rel_expression","logic_expression","FLOAT");
+							}
+							else
 			        $$=new Symbolinfo("rel_expression LOGICOP rel_expression","logic_expression",$1->getDataType());
 					 $$->add_child($1);
 			  $$->add_child($2);
@@ -848,6 +925,7 @@ logic_expression : rel_expression {
 			     if($3->getDataType()=="VOID"||$1->getDataType()=="VOID")
 			  {
 				errorfile<<"Line# "<<line_count<<": Void cannot be used in expression"<<endl;
+				error_count++;
 			  }
                  logfile<<"logic_expression	: rel_expression LOGICOP rel_expression "<<endl;
 				
@@ -870,7 +948,13 @@ rel_expression	: simple_expression {
                   logfile<<"rel_expression : simple_expression"<<endl;
         }
 		| simple_expression RELOP simple_expression	{
+			     if($1->getDataType()=="FLOAT"||$3->getDataType()=="FLOAT")
+							{
+								 $$=new Symbolinfo("simple_expression RELOP simple_expression","rel_expression","FLOAT");
+							}
+							else{
 			    $$=new Symbolinfo("simple_expression RELOP simple_expression","rel_expression",$1->getDataType());
+							}
 					 $$->add_child($1);
 			  $$->add_child($2);
 			  $$->add_child($3);
@@ -882,6 +966,7 @@ rel_expression	: simple_expression {
 			   if($3->getDataType()=="VOID"||$1->getDataType()=="VOID")
 			  {
 				errorfile<<"Line# "<<line_count<<": Void cannot be used in expression "<<endl;
+				error_count++;
 			  }
 		}
 		;
@@ -900,8 +985,14 @@ simple_expression : term {
                      logfile<<"simple_expression : term"<<endl;
         }
 		  | simple_expression ADDOP term {
-			            $$=new Symbolinfo("simple_expression ADDOP term","simple_expression",$1->getDataType());
-					    $$->add_child($1);
+			             if($1->getDataType()=="FLOAT"||$3->getDataType()=="FLOAT")
+							{
+								 $$=new Symbolinfo("simple_expression ADDOP term","simple_expression","FLOAT");
+							}
+							else{
+			              $$=new Symbolinfo("simple_expression ADDOP term","simple_expression",$1->getDataType());
+							}
+						$$->add_child($1);
 						$$->add_child($2);
 						$$->add_child($3);
 
@@ -920,6 +1011,7 @@ simple_expression : term {
 						    if($3->getDataType()=="VOID"||$1->getDataType()=="VOID")
 			             {
 				      errorfile<<"Line# "<<line_count<<": Void cannot be used in expression "<<endl;
+					  error_count++;
 			             }
                     logfile<<"simple_expression : simple_expression ADDOP term"<<endl;
 		  } 
@@ -940,28 +1032,36 @@ term :	unary_expression {
         }
      |  term MULOP unary_expression {
 		                 cout<<"unary_expression:"<<$3->getiszero()<<endl;
+						    if(($1->getDataType()=="FLOAT"||$3->getDataType()=="FLOAT")&& $2->getName()!="%")
+							{
+								 $$=new Symbolinfo("term MULOP unary_expression","term","FLOAT");
+							}else{
 		                    $$=new Symbolinfo("term MULOP unary_expression","term",$1->getDataType());
+							}
 					 $$->add_child($1);
 			         $$->add_child($2);
 			          $$->add_child($3);
 			  
-			  $$->SetStartLine($1->GetStartLine());
-			  $$->SetEndLine($3->GetEndLine());
+			         $$->SetStartLine($1->GetStartLine());
+			        $$->SetEndLine($3->GetEndLine());
 						 if(($2->getName()=="%" || $2->getName()=="/")&&($3->getiszero()))
 						 {
 							errorfile<<"Line# "<<line_count<<": Warning: division by zero i=0f=1Const=0"<<endl;
+							error_count++;
 						 }
 						 if($2->getName()=="%" && ($3->getDataType()!="INT")){
 							errorfile<<"Line# "<<line_count<<": Operands of modulus must be integers "<<endl;
+							error_count++;
 						 }
 						 if(($2->getName()=="*")&&($3->getiszero()||$1->getiszero()))
 						 {
 							$$->setisZero(true);
 						 }
 						    if($3->getDataType()=="VOID"||$1->getDataType()=="VOID")
-			  {
-				errorfile<<"Line# "<<line_count<<": Void cannot be used in expression "<<endl;
-			  }
+			             {
+				           errorfile<<"Line# "<<line_count<<": Void cannot be used in expression "<<endl;
+				           error_count++;
+			             }
                          logfile<<"term : term MULOP unary_expression"<<endl;
 	 }
      ;
@@ -977,6 +1077,7 @@ unary_expression : ADDOP unary_expression {
 						   if($2->getDataType()=="VOID")
 			              {
 				             errorfile<<"Line# "<<line_count<<": Void cannot be used in expression"<<endl;
+							 error_count++;
 			              }
          } 
 		 | NOT unary_expression {
@@ -989,6 +1090,7 @@ unary_expression : ADDOP unary_expression {
 						   if($2->getDataType()=="VOID")
 			  {
 				errorfile<<"Line# "<<line_count<<": Void cannot be used in expression "<<endl;
+				error_count++;
 			  }
 		 }
 		 | factor {   

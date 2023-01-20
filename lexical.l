@@ -18,7 +18,7 @@ extern SymbolTable *table;
 void yyerror(char *);
 extern ofstream logfile;
 int line_count=1;
-int errorcount=0;
+
 extern FILE *logout;
 FILE *tokenout;
 string  line="";
@@ -720,8 +720,7 @@ EMPTY_CONST_CHAR ('')
 
 <<EOF>> {
 	
-	fprintf(logout,"Total lines: %d\n",line_count);
-	fprintf(logout,"Total errors: %d\n",errorcount);
+	
 		 
 	return 0;
 }
